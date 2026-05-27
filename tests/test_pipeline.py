@@ -59,6 +59,23 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(calls, [("page1.png", "page2.png"), ("page1.png", "page2.png"), ("page2.png", "page2.png")])
         self.assertEqual([report.entry_id for report in reports], [2, 3])
 
+    def test_extract_reports_skips_pair_after_retry_exhaustion(self) -> None:
+        paths = [Path("page1.png"), Path("page2.png")]
+
+        with mock.patch(
+            "photo_to_json.pipeline.extract_index_page_entries",
+            side_effect=RuntimeError("always failing"),
+        ) as extract_mock:
+            reports = extract_reports_with_sliding_window(
+                client=mock.Mock(),
+                index_page_paths=paths,
+                max_retries=2,
+                retry_delay_seconds=0,
+            )
+
+        self.assertEqual(reports, [])
+        self.assertEqual(extract_mock.call_count, 4)
+
     def test_build_final_document_uses_first_four_front_matter_images(self) -> None:
         image_paths = [Path(f"image_{index}.png") for index in range(8)]
 

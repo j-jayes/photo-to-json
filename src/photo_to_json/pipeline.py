@@ -122,6 +122,8 @@ def extract_reports_with_sliding_window(
                     attempt,
                 )
                 break
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except Exception as error:  # noqa: BLE001
                 LOGGER.error(
                     "Failed extraction for pair %s/%s on attempt %s: %s",
@@ -146,7 +148,7 @@ def extract_reports_with_sliding_window(
 def build_final_document(client: genai.Client, image_paths: Sequence[Path]) -> FinalDocument:
     front_matter_paths, index_page_paths = split_front_matter_and_index(image_paths)
     if len(front_matter_paths) < 4:
-        raise ValueError("At least 4 front matter images are required for metadata extraction.")
+        raise ValueError("At least 4 images are required (used as front matter for metadata extraction).")
 
     metadata = extract_document_metadata(client, front_matter_paths[:4])
     all_reports = extract_reports_with_sliding_window(client, index_page_paths)
